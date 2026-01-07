@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>3.5.9</version>
+		<relativePath/> <!-- lookup parent from repository -->
+	</parent>
+	<groupId>com.kr.at</groupId>
+	<artifactId>com.kr.at</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<name>a_t</name>
+	<description>Demo project for Spring Boot</description>
+	<url/>
+	<licenses>
+		<license/>
+	</licenses>
+	<developers>
+		<developer/>
+	</developers>
+	<scm>
+		<connection/>
+		<developerConnection/>
+		<tag/>
+		<url/>
+	</scm>
+	<properties>
+		<java.version>21</java.version>
+		<tribuo.version>4.3.2</tribuo.version>
+	</properties>
+	<dependencies>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		
+		<!-- 타임리프 -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-thymeleaf</artifactId>
+		</dependency>
+
+		<!-- 로컬 실행(커맨드라인) -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter</artifactId>
+		</dependency>
+		
+		<!-- Tribuo -->
+		<dependency>
+			<groupId>org.tribuo</groupId>
+			<artifactId>tribuo-core</artifactId>
+			<version>${tribuo.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.tribuo</groupId>
+			<artifactId>tribuo-data</artifactId>
+			<version>${tribuo.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.tribuo</groupId>
+			<artifactId>tribuo-classification-core</artifactId>
+			<version>${tribuo.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.tribuo</groupId>
+			<artifactId>tribuo-classification-sgd</artifactId>
+			<version>${tribuo.version}</version>
+		</dependency>
+	
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
+
+</project>
