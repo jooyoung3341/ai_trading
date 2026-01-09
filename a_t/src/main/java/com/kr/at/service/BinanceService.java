@@ -19,15 +19,36 @@ public class BinanceService {
     public BinanceService(RestClient binanceRestClient) {
         this.restClient = binanceRestClient;
     }
-    
-	public List<Candle> getCandles(String symbol, String interval, int limit){
+    //int limit
+	public List<Candle> getCandlesTime(String symbol, String interval, long startTime, long endTime){
 		try {
 			List<List<Object>> raw = restClient.get()
 					.uri(uriBuilder -> uriBuilder
 							.path("/fapi/v1/klines")
 							.queryParam("symbol", symbol)
 							.queryParam("interval", interval)
-							.queryParam("limit", limit)
+							.queryParam("limit", 1000)
+							.queryParam("startTime", startTime)
+							.queryParam("endTime", endTime)
+							.build())
+					.retrieve()
+					.body(new ParameterizedTypeReference<List<List<Object>>>() {});
+			if(raw == null) return List.of();
+			return mapToCandles(raw);
+			
+		} catch (Exception e) {
+			log.error("[BinanceService - getCandles] Exception {}", e.getMessage());
+			return List.of();
+		}
+	}
+	
+	public List<Candle> getCandlesLimit(String symbol, String interval){
+		try {
+			List<List<Object>> raw = restClient.get()
+					.uri(uriBuilder -> uriBuilder
+							.path("/fapi/v1/klines")
+							.queryParam("symbol", symbol)
+							.queryParam("interval", interval)
 							.build())
 					.retrieve()
 					.body(new ParameterizedTypeReference<List<List<Object>>>() {});

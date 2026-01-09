@@ -1,5 +1,12 @@
 package com.kr.at.model;
 
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+
+import org.apache.logging.log4j.CloseableThreadContext.Instance;
+
 public class Candle {
 
     private long openTime;
@@ -65,7 +72,8 @@ public class Candle {
 
 	@Override
 	public String toString() {
-		return "Candle [openTime=" + openTime + ", open=" + open + ", high=" + high + ", low=" + low + ", close="
+		ZonedDateTime kst = Instant.ofEpochMilli(openTime).atZone(ZoneId.of("Asia/Seoul"));
+		return "Candle [openTime=" + kst.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))  + ", open=" + open + ", high=" + high + ", low=" + low + ", close="
 				+ close + ", volume=" + volume + "]";
 	}
 	

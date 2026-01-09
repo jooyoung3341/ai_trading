@@ -1,0 +1,134 @@
+3org.tribuo.classification.sgd.linear.LinearSGDModel˘L
+Jtype.googleapis.com/tribuo.classification.sgd.ClassificationLinearSGDProto™L
+”H
+linear-sgd-modelª@
+˝linearsgdmodel-03org.tribuo.classification.sgd.linear.LinearSGDModel"%org.tribuo.provenance.ModelProvenance*
+instance-values*
+tribuo-version*
+java-version*
+trainer*
+os-arch*
+
+trained-at*
+os-name*
+dataset*
+
+class-name	
+ı
+mutabledataset-1org.tribuo.MutableDataset"'org.tribuo.provenance.DatasetProvenance*
+num-features*
+num-examples*
+num-outputs*
+tribuo-version*
+
+datasource*
+transformations*
+is-sequence*
+is-dense*
+
+class-name
+‡logisticregressiontrainer-2>org.tribuo.classification.sgd.linear.LogisticRegressionTrainer"0org.tribuo.provenance.impl.TrainerProvenanceImpl*
+seed*
+tribuo-version*
+minibatchSize*
+train-invocation-count*
+is-sequence*
+shuffle*
+
+epochs*
+	optimiser*
+host-short-name*
+
+class-name*
+loggingInterval *
+	objective!
+ú"datasource-11org.tribuo.DataSource"0org.tribuo.provenance.SimpleDataSourceProvenance*
+datasource-creation-time#*
+description$*
+outputFactory%
+¨&transformermap-4#org.tribuo.transform.TransformerMap"<org.tribuo.transform.TransformerMap$TransformerMapProvenance*
+transformation-map'*
+dataset(*
+
+class-name)
+Ÿ*	adagrad-5"org.tribuo.math.optimisers.AdaGrad"Icom.oracle.labs.mlrg.olcut.provenance.impl.ConfiguredObjectProvenanceImpl*
+epsilon+*
+initialLearningRate,*
+initialValue-*
+host-short-name.*
+
+class-name/
+ª0logmulticlass-66org.tribuo.classification.sgd.objectives.LogMulticlass"Icom.oracle.labs.mlrg.olcut.provenance.impl.ConfiguredObjectProvenanceImpl*
+host-short-name1*
+
+class-name2
+ä3labelfactory-12&org.tribuo.classification.LabelFactory"=org.tribuo.classification.LabelFactory$LabelFactoryProvenance*
+
+class-name4
+È5transformationmap-8&org.tribuo.transform.TransformationMap"Icom.oracle.labs.mlrg.olcut.provenance.impl.ConfiguredObjectProvenanceImpl*
+featureTransformationList6*
+globalTransformations7*
+host-short-name9*
+
+class-name:
+ı;mutabledataset-9org.tribuo.MutableDataset"'org.tribuo.provenance.DatasetProvenance*
+num-features<*
+num-examples=*
+num-outputs>*
+tribuo-version?*
+
+datasource@*
+transformationsA*
+is-sequenceB*
+is-denseC*
+
+class-nameD
+ÚEmeanstddevtransformation-10=org.tribuo.transform.transformations.MeanStdDevTransformation"`org.tribuo.transform.transformations.MeanStdDevTransformation$MeanStdDevTransformationProvenance*
+targetStdDevF*
+
+targetMeanG*
+
+class-nameH\tribuo-version4.3.2*Acom.oracle.labs.mlrg.olcut.provenance.primitives.StringProvenance[java-version21.0.9*Acom.oracle.labs.mlrg.olcut.provenance.primitives.StringProvenance\trainerlogisticregressiontrainer-2*0org.tribuo.provenance.impl.TrainerProvenanceImpl0Uos-archamd64*Acom.oracle.labs.mlrg.olcut.provenance.primitives.StringProvenancex
+trained-at#2026-01-09T09:37:04.002863300+09:00*Ccom.oracle.labs.mlrg.olcut.provenance.primitives.DateTimeProvenanceZos-name
+Windows 10*Acom.oracle.labs.mlrg.olcut.provenance.primitives.StringProvenanceHdatasetmutabledataset-1*'org.tribuo.provenance.DatasetProvenance0Ü	
+class-name3org.tribuo.classification.sgd.linear.LinearSGDModel*Acom.oracle.labs.mlrg.olcut.provenance.primitives.StringProvenanceSnum-features6*>com.oracle.labs.mlrg.olcut.provenance.primitives.IntProvenanceVnum-examples8635*>com.oracle.labs.mlrg.olcut.provenance.primitives.IntProvenanceRnum-outputs4*>com.oracle.labs.mlrg.olcut.provenance.primitives.IntProvenance\tribuo-version4.3.2*Acom.oracle.labs.mlrg.olcut.provenance.primitives.StringProvenanceQ
+datasourcedatasource-11*0org.tribuo.provenance.SimpleDataSourceProvenance0etransformationstransformermap-4*<org.tribuo.transform.TransformerMap$TransformerMapProvenance0Zis-sequencefalse*Bcom.oracle.labs.mlrg.olcut.provenance.primitives.BooleanProvenanceVis-densetrue*Bcom.oracle.labs.mlrg.olcut.provenance.primitives.BooleanProvenancel
+class-nameorg.tribuo.MutableDataset*Acom.oracle.labs.mlrg.olcut.provenance.primitives.StringProvenancePseed12345*?com.oracle.labs.mlrg.olcut.provenance.primitives.LongProvenance\tribuo-version4.3.2*Acom.oracle.labs.mlrg.olcut.provenance.primitives.StringProvenanceTminibatchSize1*>com.oracle.labs.mlrg.olcut.provenance.primitives.IntProvenance]train-invocation-count0*>com.oracle.labs.mlrg.olcut.provenance.primitives.IntProvenanceZis-sequencefalse*Bcom.oracle.labs.mlrg.olcut.provenance.primitives.BooleanProvenanceUshuffletrue*Bcom.oracle.labs.mlrg.olcut.provenance.primitives.BooleanProvenanceMepochs5*>com.oracle.labs.mlrg.olcut.provenance.primitives.IntProvenancee	optimiser	adagrad-5*Icom.oracle.labs.mlrg.olcut.provenance.impl.ConfiguredObjectProvenanceImpl0_host-short-nameTrainer*Acom.oracle.labs.mlrg.olcut.provenance.primitives.StringProvenanceë
+class-name>org.tribuo.classification.sgd.linear.LogisticRegressionTrainer*Acom.oracle.labs.mlrg.olcut.provenance.primitives.StringProvenanceY loggingInterval1000*>com.oracle.labs.mlrg.olcut.provenance.primitives.IntProvenancek!	objectivelogmulticlass-6*Icom.oracle.labs.mlrg.olcut.provenance.impl.ConfiguredObjectProvenanceImpl0Ü#datasource-creation-time#2026-01-09T09:37:03.695696500+09:00*Ccom.oracle.labs.mlrg.olcut.provenance.primitives.DateTimeProvenancef$descriptiontouch4way_H4_T0.01*Acom.oracle.labs.mlrg.olcut.provenance.primitives.StringProvenancec%outputFactorylabelfactory-12*=org.tribuo.classification.LabelFactory$LabelFactoryProvenance0x'transformation-maptransformationmap-8*Icom.oracle.labs.mlrg.olcut.provenance.impl.ConfiguredObjectProvenanceImpl0H(datasetmutabledataset-9*'org.tribuo.provenance.DatasetProvenance0v)
+class-name#org.tribuo.transform.TransformerMap*Acom.oracle.labs.mlrg.olcut.provenance.primitives.StringProvenanceS+epsilon0.1*Acom.oracle.labs.mlrg.olcut.provenance.primitives.DoubleProvenance_,initialLearningRate1.0*Acom.oracle.labs.mlrg.olcut.provenance.primitives.DoubleProvenanceX-initialValue0.0*Acom.oracle.labs.mlrg.olcut.provenance.primitives.DoubleProvenances.host-short-nameStochasticGradientOptimiser*Acom.oracle.labs.mlrg.olcut.provenance.primitives.StringProvenanceu/
+class-name"org.tribuo.math.optimisers.AdaGrad*Acom.oracle.labs.mlrg.olcut.provenance.primitives.StringProvenancef1host-short-nameLabelObjective*Acom.oracle.labs.mlrg.olcut.provenance.primitives.StringProvenanceâ2
+class-name6org.tribuo.classification.sgd.objectives.LogMulticlass*Acom.oracle.labs.mlrg.olcut.provenance.primitives.StringProvenancey4
+class-name&org.tribuo.classification.LabelFactory*Acom.oracle.labs.mlrg.olcut.provenance.primitives.StringProvenanceö8globalTransformationsmeanstddevtransformation-10*`org.tribuo.transform.transformations.MeanStdDevTransformation$MeanStdDevTransformationProvenance0i9host-short-nameTransformationMap*Acom.oracle.labs.mlrg.olcut.provenance.primitives.StringProvenancey:
+class-name&org.tribuo.transform.TransformationMap*Acom.oracle.labs.mlrg.olcut.provenance.primitives.StringProvenanceS<num-features6*>com.oracle.labs.mlrg.olcut.provenance.primitives.IntProvenanceV=num-examples8635*>com.oracle.labs.mlrg.olcut.provenance.primitives.IntProvenanceR>num-outputs4*>com.oracle.labs.mlrg.olcut.provenance.primitives.IntProvenance\?tribuo-version4.3.2*Acom.oracle.labs.mlrg.olcut.provenance.primitives.StringProvenanceQ@
+datasourcedatasource-11*0org.tribuo.provenance.SimpleDataSourceProvenance0ZBis-sequencefalse*Bcom.oracle.labs.mlrg.olcut.provenance.primitives.BooleanProvenanceVCis-densetrue*Bcom.oracle.labs.mlrg.olcut.provenance.primitives.BooleanProvenancelD
+class-nameorg.tribuo.MutableDataset*Acom.oracle.labs.mlrg.olcut.provenance.primitives.StringProvenanceXFtargetStdDev1.0*Acom.oracle.labs.mlrg.olcut.provenance.primitives.DoubleProvenanceVG
+targetMean0.0*Acom.oracle.labs.mlrg.olcut.provenance.primitives.DoubleProvenanceêH
+class-name=org.tribuo.transform.transformations.MeanStdDevTransformation*Acom.oracle.labs.mlrg.olcut.provenance.primitives.StringProvenance6""78"A"–org.tribuo.ImmutableFeatureMap≠
+8type.googleapis.com/tribuo.core.ImmutableFeatureMapProto
+}org.tribuo.RealIDInfod
+/type.googleapis.com/tribuo.core.RealIDInfoProto1
+volumeªCQ!ÍØè@@YÑ–∏£ﬁÁøa    ¸Â‡ºiÒˇˇˇˇ‹¿@
+{org.tribuo.RealIDInfob
+/type.googleapis.com/tribuo.core.RealIDInfoProto/
+ema7ªCQ˝“àÚ˚gˇ?Y}±˝äG¯øa    †;Ó<i"    ›¿@
+|org.tribuo.RealIDInfoc
+/type.googleapis.com/tribuo.core.RealIDInfoProto0
+ema30ªCQòì•ñ˛?YµÀõ5˙ıøa    ü\=iä    ›¿@
+|org.tribuo.RealIDInfoc
+/type.googleapis.com/tribuo.core.RealIDInfoProto0
+ema99ªCQ†U‘ =@Ypõ∞Ä?åÙøa    òÂ‚<iå    ›¿@
+zorg.tribuo.RealIDInfoa
+/type.googleapis.com/tribuo.core.RealIDInfoProto.
+closeªCQC{w‹„@YT8F”C}˘øa   ÄÿÉΩi⁄ˇˇˇˇ‹¿@
+zorg.tribuo.RealIDInfoa
+/type.googleapis.com/tribuo.core.RealIDInfoProto.
+sslªCQ^ƒ”áˇ?Y—ÿ≥MÆ=¯øa    Ö#ΩiHˇˇˇˇ‹¿@*§,org.tribuo.classification.ImmutableLabelInfot
+Atype.googleapis.com/tribuo.classification.ImmutableLabelInfoProto/
+UP_ONLY
+	DOWN_ONLY
+NONE
+BOTH˚–Ì> 24.3.2´ org.tribuo.math.LinearParametersÜ
+:type.googleapis.com/tribuo.math.impl.LinearParametersProto«
+ƒorg.tribuo.math.la.DenseMatrix°
+5type.googleapis.com/tribuo.math.impl.DenseTensorProtoÁ
+‡√uJ¨†ÓøBö@}W-«?∫^¯Á.≈øÅv˛v7åÓ?1åã¿˚ÀøÉä!Á<˜‰?„Vêæ˜ø‰Q≈˛òÍ?õÔJƒ,ëøóV∂å∞∏?ëÍ—ËÔKˆø•ù‹iA‰?©Ÿ9í∞≥Ê?˘ÓÍ÷:ÒøÉÚ:œ ?ıÃYmÅf¿øßj]Du≥?7/qOûÃ?íÇZŒø;ﬂ;∑º?i?|„:ê@mßœ‘øcWΩ¥!û÷?ÕJò˘c–?g‡¨™j ?,–tQ…“?oá.ÿÜ◊?µb„∆¿$"org.tribuo.math.util.ExpNormalizer
