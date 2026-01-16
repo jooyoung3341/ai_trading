@@ -31,12 +31,14 @@ public class AtService {
 		List<Double> closeList = new ArrayList<>();
 		List<Double> highList = new ArrayList<>();
 		List<Double> lowList = new ArrayList<>();
+		List<Double> openList = new ArrayList<>();
 		List<Double> volList = new ArrayList<>();
 		
 		for (Candle data : datas) {
 			closeList.add(data.getClose());
 			highList.add(data.getHigh());
 			lowList.add(data.getLow());
+			openList.add(data.getOpen());
 			volList.add(data.getVolume());
 		}
 		
@@ -63,6 +65,7 @@ public class AtService {
 		List<Double> volData = volList.subList(1, volList.size()-startIdx);
 		List<Double> highData = highList.subList(1, highList.size()-startIdx);
 		List<Double> lowData = lowList.subList(1, lowList.size()-startIdx);
+		List<Double> openData = openList.subList(1, openList.size()-startIdx);
 		
 		List<Double> tmpSslList = new ArrayList<>();
 		for (int i = 0; i < closeList.size(); i++) {
@@ -105,6 +108,7 @@ public class AtService {
 			fr.setVolume(volData.get(i));
 			fr.setLow(lowData.get(i));
 			fr.setHigh(highData.get(i));
+			fr.setOpen(openData.get(i));
 			frList.add(fr);
 		}
 		//bars = 5분봉 1시간 = 12 / 15분봉 1시간  = 4
@@ -116,6 +120,8 @@ public class AtService {
 		List<Double> closeList = new ArrayList<>();
 		List<Double> highList = new ArrayList<>();
 		List<Double> lowList = new ArrayList<>();
+		List<Double> openList = new ArrayList<>();
+		
 		double volume = 0.0;
 		int idx = 0;
 		
@@ -126,7 +132,9 @@ public class AtService {
 			closeList.add(data.getClose());
 			highList.add(data.getHigh());
 			lowList.add(data.getLow());
+			openList.add(data.getOpen());
 			volume = data.getVolume();
+			
 			idx++;
 		}
 		
@@ -139,6 +147,7 @@ public class AtService {
 		fr.setClose(closeList.get(closeList.size()-1));
 		fr.setLow(lowList.get(lowList.size()-1));
 		fr.setHigh(highList.get(highList.size()-1));
+		fr.setOpen(openList.get(openList.size()-1));
 		fr.setVolume(volume);
 		
 		fr.setSsl(ssl);

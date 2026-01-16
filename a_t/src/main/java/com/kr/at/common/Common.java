@@ -46,4 +46,22 @@ public class Common {
         return list;
     }
 
+    /** (indicator / close) - 1 : 비율 값(0.01 = 1%) */
+    public static double pctFrom(double close, double indicator) {
+        // NaN/Infinity 방지
+        if (!Double.isFinite(close) || !Double.isFinite(indicator)) return 0.0;
+
+        // close가 0이면 나눗셈 불가
+        if (close == 0.0) return 0.0;
+
+        return (indicator / close) - 1.0;
+    }
+    
+    /** 퍼센트(%) 단위로 보고 싶으면 (1.0 = 1%) */
+    public static double pctPercent(double close, double indicator) {
+    	System.out.println("[pctPercent] close : " + close + " / indi data : " + indicator );
+        return pctFrom(close, indicator) * 100.0;
+    }
+    
+    
 }

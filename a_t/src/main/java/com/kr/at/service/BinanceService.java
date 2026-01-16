@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
 import com.kr.at.model.Candle;
+import com.kr.at.model.Ticker;
 
 @Service
 public class BinanceService {
@@ -72,5 +73,34 @@ public class BinanceService {
             double volume = Double.parseDouble(data.get(5).toString());
             return new Candle(openTime, open, high, low, close, volume);
         }).toList();
+    }
+    
+    //심볼에 대한 현제 데이터 (symbol없으면 전체코인 가져옴)
+    public List<Ticker> getTicker(String symbol) {
+    	try {
+			return restClient.get()
+					.uri(uriBuilder -> uriBuilder
+							.path("/fapi/v1/ticker/24hr")
+							.queryParam("symbol", symbol)
+							.build())
+					.retrieve()
+					.body(new ParameterizedTypeReference<List<Ticker>>() {});
+		} catch (Exception e) {
+			return List.of();
+		}
+    }
+    
+    //심볼에 대한 현제 데이터 (symbol없으면 전체코인 가져옴)
+    public List<Ticker> getTickers() {
+    	try {
+			return restClient.get()
+					.uri(uriBuilder -> uriBuilder
+							.path("/fapi/v1/ticker/24hr")
+							.build())
+					.retrieve()
+					.body(new ParameterizedTypeReference<List<Ticker>>() {});
+		} catch (Exception e) {
+			return List.of();
+		}
     }
 }
