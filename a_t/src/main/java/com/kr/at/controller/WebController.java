@@ -17,7 +17,12 @@ public class WebController {
 	
 	@RequestMapping(value="/web/learning", method=RequestMethod.GET)
 	public String learningMain(Model model) {
-		return "web/learning/main";
+		return "web/learning";
+	}
+	
+	@RequestMapping(value="/web/predict", method=RequestMethod.GET)
+	public String predict(Model model) {
+		return "web/predict";
 	}
 	
 }

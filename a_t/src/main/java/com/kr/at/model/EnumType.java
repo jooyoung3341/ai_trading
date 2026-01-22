@@ -3,6 +3,7 @@ package com.kr.at.model;
 public enum EnumType {
 	Success("Success")
 	,Fail("Fail")
+	,Result("Result")
 	,None("None")
 	,Long("Long")
 	,Short("Short")

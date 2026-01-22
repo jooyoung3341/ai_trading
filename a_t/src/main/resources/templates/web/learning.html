@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+		layout:decorate="~{layout/default}">
+<head>
+<th:block layout:fragment="css">
+</th:block>
+<meta charset="UTF-8">
+</head>
+
+<div layout:fragment="content">
+<label for="exampleSelect1" class="form-label mt-4">코인 리스트</label>
+      		<!--전체 심볼-->
+      	<select class="form-select" id="symbolSelect"></select>
+
+		<fieldset disabled="">
+    		<label class="form-label" for="disabledInput"></label>
+    		<input class="form-control" id="symbolText" type="text" placeholder="" disabled="">
+  		</fieldset>
+  			<br/>
+		<div class="input-group mb-3">
+			<input type="text" class="form-control" placeholder="symbol Name" id="searchText">
+      		<button class="btn btn-primary" type="button" id="symbolSearch">검색</button>
+    	</div>
+    	<div>
+			<label for="exampleSelect1" class="form-label mt-4">시간</label>
+		      <select class="form-select" id="hour">
+		        <option value="1">1</option>
+		        <option value="2">2</option>
+		        <option value="4">4</option>
+		        <option value="8">8</option>
+		        <option value="16">16</option>
+		        <option value="24">24</option>
+		      </select>
+		</div>
+		<div>
+			<label for="exampleSelect1" class="form-label mt-4">%</label>
+		      <select class="form-select" id="hold">
+		        <option value="0.001">0.1</option>
+		        <option value="0.002">0.2</option>
+		        <option value="0.003">0.3</option>
+		        <option value="0.004">0.4</option>
+		        <option value="0.005">0.5</option>
+		        <option value="0.006">0.6</option>
+		      	<option value="0.007">0.7</option>
+		        <option value="0.008">0.8</option>
+		        <option value="0.009">0.9</option>
+		        <option value="0.01">1.0</option>
+		      </select>
+		</div>
+    	<button type="button" id="learningBtn" class="btn btn-secondary">학습</button>
+		<br/>
+</div>
+
+
+<th:block layout:fragment="script">
+<script>
+window.onload = function(){
+	let allSymbolList = [];  // 전역 변수
+	allTicker();
+}
+//select 선택 시 text박스에 넣기
+$('#symbolSelect').on('change', function(){
+	var val = $(this).val();
+	$('#symbolText').val(val);
+})
+
+//전체 심볼 가져오기
+function allTicker(){
+	$.ajax({
+		url : "/at/allTicker",
+		dataType : "json",
+		success : function(data){
+			allSymbolList = data.tickers;
+			disp = "";
+			$(allSymbolList).each(function(idx, item){
+				disp += "<option value="+item+">"+item+"</option>"
+			})
+			$("#symbolSelect").html(disp);
+		}
+	})
+}
+
+$('#learningBtn').on('click', function(){
+	console.log("btn 클릭")
+	var symbol = $("#symbolText").val();
+	var hold = $("#hold").val();
+	var hour = $("#hour").val();
+	
+	console.log("symbol : " + symbol);
+	console.log("hold : " + hold);
+	console.log("hour : " + hour);
+	
+	if(!symbol || !hold || !hour){
+		alert("필수값 입력")
+		return;
+	}
+	$.ajax({	 
+		url : "/at/learning",
+		data : {"symbol" : symbol,
+					"interval" : "5m",
+					"hold" : hold,
+					"hour" : hour		
+					},
+		dataType : "json",
+		success : function(){
+			$.ajax({
+				url : "/at/learning",
+				data : {"symbol" : symbol,
+							"interval" : "15m",
+							"hold" : hold,
+							"hour" : hour		
+							},
+				dataType : "json",
+				success : function(){
+					alert("학습 완료");
+				}
+			})
+		}
+	})
+})
+
+$('#symbolSearch').on('click', function(){
+	var symbol = $('#searchText').val().toUpperCase();
+
+	if (!symbol.endsWith("USDT")) {
+		symbol += "USDT";
+	}
+
+	var isSymbol = false;
+	$(allSymbolList).each(function(idx, item){
+		if(symbol === item){
+			isSymbol = true;
+			return;
+		}
+	})
+	if(isSymbol === true){
+		$('#symbolText').val(symbol);
+	}else{
+		alert("없는 심볼");
+	}
+})
+</script>
+</th:block>
+
+</html>

@@ -65,7 +65,7 @@ public class TestController {
 		fr.setVolume(vol);
 		
 		Path moelPath = Path.of("C:\\Users\\admin\\git\\ai_trading\\a_t\\models\\btc15m.model");
-		Model<Label> model = service.loadModel(moelPath);
+		Model<Label> model = service.loadModel("btc15m.model");
 		
 		Prediction<Label> pred = service.predict(model, fr);
 		
@@ -156,9 +156,9 @@ public class TestController {
 			fr.add(row);
 		}
 		
-		Path save = service.trainAndSaveTouch4WayModel(fr, 4, 0.01, 0, Path.of("models", "mvp.model"));
+		//Path save = service.trainAndSaveTouch4WayModel(fr, 4, 0.01, 0, Path.of("models", "mvp.model"));
 		
-		System.out.println("성/실 : " + save.toAbsolutePath());
+		//System.out.println("성/실 : " + save.toAbsolutePath());
 		System.out.println("끝 ===");
 		
 		

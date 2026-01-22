@@ -1,10 +1,12 @@
 package com.kr.at.service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.tribuo.Model;
 import org.tribuo.MutableDataset;
@@ -31,14 +33,17 @@ import java.time.OffsetDateTime;
 @Service
 public class TribuoService {
 
+	@Value("${model.path}")
+	private String model_path;
+	
 	@Autowired
 	private BinanceService bService;
 	@Autowired
 	private Indicator indicator;
 	@Autowired
-	private static Common common;
+	private Common common;
 	
-	public enum Y { UP_ONLY, DOWN_ONLY, NONE, BOTH}
+	public enum Y { UP_ONLY, DOWN_ONLY, NONE, UP_FIRST, DOWN_FIRST}
 		
 	
     // 피처 이름(이름표??)
@@ -46,17 +51,21 @@ public class TribuoService {
             "lowPct", "highPct", "volLog", "ema7Pct", "ema30Pct", "ema99Pct", "sslPct"
     };
     
-
-    public static Model<Label> loadModel(Path modelPath) throws Exception {
-        // 저장했던 model.serializeToFile(modelPath) 의 역방향
+    
+    public Model<Label> loadModel(String modelName) throws Exception {
+        Path dir = Path.of(model_path);
+        String fileName = modelName.endsWith(".model") ? modelName : modelName + ".model";
+        Path modelPath = dir.resolve(fileName);
+        // 저장했던 model 파일을 읽음
         return (Model<Label>) Model.deserializeFromFile(modelPath);
     }
 
     //예측
-    public static Prediction<Label> predict(Model<Label> model, FeatureRow fr) {
-        System.out.println("=== [PREDICT INPUT] =========================");
+    public Prediction<Label> predict(Model<Label> model, FeatureRow fr) {
+        System.out.println("=== [PREDICT INPUT] start =========================");
         System.out.println("input FeatureRow = " + fr);
-
+        System.out.println("=== [PREDICT INPUT] end =========================");
+        
         double close  = fr.getClose();
         double vol    = fr.getVolume();
         double ema7   = fr.getEma7();
@@ -67,21 +76,19 @@ public class TribuoService {
         System.out.printf("close=%.8f vol=%.8f ema7=%.8f ema30=%.8f ema99=%.8f ssl=%.8f%n",
                 close, vol, ema7, ema30, ema99, ssl);
 
-        // 이상치/NaN 체크
+        // 이상치 체크
         if (!Double.isFinite(close) || !Double.isFinite(vol) || !Double.isFinite(ema7) ||
             !Double.isFinite(ema30) || !Double.isFinite(ema99) || !Double.isFinite(ssl)) {
-            System.out.println("[WARN] non-finite feature exists!");
+            System.out.println("[PREDICT - WARN] non-finite feature exists!");
         }
-        if (close <= 0) System.out.println("[WARN] close <= 0");
-        if (vol < 0)    System.out.println("[WARN] volume < 0");
+        if (close <= 0) System.out.println("[PREDICT - WARN] close <= 0");
+        if (vol < 0)    System.out.println("[PREDICT - WARN] volume < 0");
 
-        // 모델이 아는 feature 목록 찍기 (입력 feature 이름 mismatch 잡기 좋음)
-        var fmap = model.getFeatureIDMap();
-        System.out.println("model features = " + fmap.keySet());
-
-        System.out.println("============================================");
+        //테스트용 로그=======
+        //var fmap = model.getFeatureIDMap();
+        //System.out.println("model features = " + fmap.keySet());
+        //테스트용 로그=======
         
-    	System.out.println("입력 데이터 : " + fr.toString());
     	double volLog = (!Double.isFinite(fr.getVolume()) || fr.getVolume() < 0)
                 ? 0.0
                 : Math.log1p(fr.getVolume());
@@ -94,38 +101,33 @@ public class TribuoService {
         feats.add(new Feature(FEATURE_NAMES[5], common.pctFrom(close, fr.getEma99())));
         feats.add(new Feature(FEATURE_NAMES[6], common.pctFrom(close, fr.getSsl())));
 
-        // 예측할 때 Output(Label)은 “더미”여도 됨(학습용 정답이 아니라 입력 형태 맞추는 용도)
+        //Example<T> : 한 건의 학습/예측 샘플
         Example<Label> ex = new ListExample<>(new Label(Label.UNKNOWN), feats);
 
-        // 피처가 하나도 없거나, 모델이 아는 피처와 겹치는 게 없으면 예외가 날 수 있음 :contentReference[oaicite:1]{index=1}
+        //예측 실행
         return model.predict(ex);
     }
 
-  //예측
-    public static void printResult(Prediction<Label> pred) {
-        String predicted = pred.getOutput().getLabel(); // Label의 이름 꺼내기 :contentReference[oaicite:2]{index=2}
-        System.out.println("predicted=" + predicted);
-
-        // 각 라벨 점수(또는 확률) 맵 :contentReference[oaicite:3]{index=3}
+    //예측 결과
+    public Map<String, Object> printResult(Prediction<Label> pred) {
+        //String predicted = pred.getOutput().getLabel(); // Label의 이름 꺼내기 :contentReference[oaicite:2]{index=2}
+        //System.out.println("predicted=" + predicted);
         Map<String, Label> scores = pred.getOutputScores();
-        boolean probs = pred.hasProbabilities(); // 확률인지 여부 :contentReference[oaicite:4]{index=4}
-
-        System.out.println("hasProbabilities=" + probs);
         
+        Map<String, Object> resultMap = new HashMap<>();
+        resultMap.put("UP_ONLY", scores.containsKey("UP_ONLY")   ? scores.get("UP_ONLY").getScore()*100   : 0.0);
+        resultMap.put("DOWN_ONLY", scores.containsKey("DOWN_ONLY")   ? scores.get("DOWN_ONLY").getScore()*100   : 0.0);
+        resultMap.put("NONE", scores.containsKey("NONE")   ? scores.get("NONE").getScore()*100   : 0.0);
+        resultMap.put("UP_FIRST", scores.containsKey("UP_FIRST")   ? scores.get("UP_FIRST").getScore()*100  : 0.0);
+        resultMap.put("DOWN_FIRST", scores.containsKey("DOWN_FIRST")   ? scores.get("DOWN_FIRST").getScore()*100   : 0.0);
         
-        double pUp   = scores.containsKey("UP_ONLY")   ? scores.get("UP_ONLY").getScore()   : 0.0;
-        double pDown = scores.containsKey("DOWN_ONLY") ? scores.get("DOWN_ONLY").getScore() : 0.0;
-        double pNone = scores.containsKey("NONE")      ? scores.get("NONE").getScore()      : 0.0;
-        double pBoth = scores.containsKey("BOTH")      ? scores.get("BOTH").getScore()      : 0.0;
-
-        System.out.printf("UP=%.17f DOWN=%.17f NONE=%.17f BOTH=%.17f sum=%.17f%n",
-        	    pUp, pDown, pNone, pBoth, (pUp+pDown+pNone+pBoth));
-        
-        System.out.println("=== [PREDICT OUTPUT] ========================");
+        System.out.println("=== [PREDICT - RESULT - OUTPUT] ========================");
         System.out.println("predicted=" + pred.getOutput().getLabel());
         scores.entrySet().stream()
                 .sorted((a,b) -> Double.compare(b.getValue().getScore(), a.getValue().getScore()))
                 .forEach(e -> System.out.println(e.getKey() + " : " + e.getValue().getScore()*100));
+        
+        return resultMap;
     }
     
     
@@ -138,41 +140,25 @@ public class TribuoService {
     // threshold 예: 0.003 (0.3%)
     // warmupBars 예: EMA99 안정화로 200
     // modelPath 저장 경로
-    public Path trainAndSaveTouch4WayModel(List<FeatureRow> featureRows, int horizonBars, double threshold, int warmupBars, Path modelPath) throws IOException {
-    	System.out.println("featureRows : " + featureRows.size());
-        if (featureRows == null || featureRows.isEmpty()) {
+    public Path trainAndSaveTouch4WayModel(List<FeatureRow> featureRows, int horizonBars, double threshold, String modelName) throws IOException {
+    	horizonBars++;
+    	if (featureRows == null || featureRows.isEmpty()) {
             throw new IllegalArgumentException("featureRows is empty");
         }
-        if (featureRows.size() <= warmupBars + horizonBars) {
+        if (featureRows.size() <= horizonBars) {
             throw new IllegalArgumentException("Not enough rows. size=" + featureRows.size()
-                    + ", warmupBars=" + warmupBars + ", horizonBars=" + horizonBars);
+                   +", horizonBars=" + horizonBars);
         }
 
         for (int k = 0; k < Math.min(5, featureRows.size()); k++) {
             FeatureRow r = featureRows.get(k);
-            System.out.println("[ROW " + k + "] close=" + r.getClose());
         }
-        
-        int bad = 0;
-        for (FeatureRow r : featureRows) {
-            if (!Double.isFinite(r.getClose()) ||
-                !Double.isFinite(r.getVolume()) ||
-                !Double.isFinite(r.getEma7()) ||
-                !Double.isFinite(r.getEma30()) ||
-                !Double.isFinite(r.getEma99()) ||
-                !Double.isFinite(r.getSsl())) {
-                bad++;
-            }
-            if (r.getClose() <= 0) bad++;
-        }
-        System.out.println("[SANITY] badRows=" + bad + " / " + featureRows.size());
         
         // 1) 라벨 생성해서 TrainingRow 만들기 (정답지 만드는 단계)
        // Touch4WayLabeler labeler = new Touch4WayLabeler();
         List<FeatureRowPct> featureRowsPct = new ArrayList<FeatureRowPct>(featureRows.size());
 
         for (int t = 0; t < featureRows.size(); t++) {
-            if (t < warmupBars) continue;
             if (t + horizonBars >= featureRows.size()) break; // 미래를 봐야 라벨 가능
 
             FeatureRow fr = featureRows.get(t);
@@ -193,13 +179,13 @@ public class TribuoService {
                     : Math.log1p(fr.getVolume());
             
             featureRowsPct.add(new FeatureRowPct(
-                    highPct, lowPct, volLog,
-                    ema7Pct, ema30Pct, ema30Pct, sslPct, // <- 여기 실수 주의(아래에서 ema99Pct 넣어야 함)
+            		lowPct, highPct, volLog,
+                    ema7Pct, ema30Pct, ema99Pct, sslPct, 
                     y
             ));
         }
 
-     //   분포 로그 (Dataset 만들기 전)
+        // 분포 로그 (Dataset 만들기 전)
         int up=0, down=0, none=0, both=0, other=0;
         for (FeatureRowPct r : featureRowsPct) {
             String y = r.getLabel();
@@ -211,17 +197,24 @@ public class TribuoService {
         }
         System.out.println("[LABEL_DIST] total=" + featureRows.size()
                 + " UP_ONLY=" + up + " DOWN_ONLY=" + down + " NONE=" + none + " BOTH=" + both + " other=" + other);
-        // 2) Dataset 생성
+        
+        // 2) Dataset 생성(Tribuo가 학습 가능한 형태로 변환)
         MutableDataset<Label> dataset = buildDatasetPct(featureRowsPct, "touch4way_H" + horizonBars + "_T" + threshold);
 
-     // Dataset 만든 직후
-        TransformationMap tmap = new TransformationMap(
-            java.util.List.of(new MeanStdDevTransformation()) // 평균0/표준편차1 :contentReference[oaicite:4]{index=4}
-        );
+        //Dataset 만든 직후
+        //TransformationMap tmap = new TransformationMap(
+         //   java.util.List.of(new MeanStdDevTransformation()) // 평균0/표준편차1 :contentReference[oaicite:4]{index=4}
+        //);
 
         // 3) 학습 (MVP: Logistic Regression)
+        //학습 객체
         LogisticRegressionTrainer trainer = new LogisticRegressionTrainer();
+        //학습 수행
         Model<Label> model = trainer.train(dataset);
+        
+        Path dir = Path.of(model_path);
+        String fileName = modelName.endsWith(".model") ? modelName : modelName + ".model";
+        Path modelPath = dir.resolve(fileName);
         
         // 4) 저장
         Files.createDirectories(modelPath.getParent());
@@ -255,38 +248,52 @@ public class TribuoService {
     }
     
     /**
-     * 4클래스 라벨:
+     * 6클래스 라벨:
      *  - UP_ONLY  : horizon 안에 +threshold 터치 O, -threshold 터치 X
      *  - DOWN_ONLY: horizon 안에 -threshold 터치 O, +threshold 터치 X
      *  - NONE     : 둘 다 X
-     *  - BOTH     : 둘 다 O
      */
     public String label(List<FeatureRow> rows, int t, int horizonBars, double threshold) {
 
+    	//종가
         double base = rows.get(t).getClose();
         double upPrice = base * (1.0 + threshold);
         double downPrice = base * (1.0 - threshold);
 
-        boolean hitUp = false;
-        boolean hitDown = false;
-
+        //봉 몇개를 볼 지 정함
         int end = Math.min(t + horizonBars, rows.size() - 1);
 
-        //boolean hitUp = false, hitDown = false;
-        for (int i = t+1; i <= end; i++) {
+        int firstUpIdx = -1;
+        int firstDownIdx = -1;
+        
+        for (int i = t + 1; i <= end; i++) {
             FeatureRow f = rows.get(i);
 
-            // 터치는 high/low 기준
-            if (f.getHigh() >= upPrice) hitUp = true;
-            if (f.getLow() <= downPrice) hitDown = true;
+            // 아직 기록 안 됐으면 "처음 터치한 시점" 저장
+            if (firstUpIdx == -1 && f.getHigh() >= upPrice) {
+                firstUpIdx = i;
+            }
+            if (firstDownIdx == -1 && f.getLow() <= downPrice) {
+                firstDownIdx = i;
+            }
 
-            if (hitUp && hitDown) break;
+            // 둘 다 최초 시점이 잡혔으면 더 볼 필요 없음
+            if (firstUpIdx != -1 && firstDownIdx != -1) break;
+        }
+        
+        boolean hitUp = firstUpIdx != -1;
+        boolean hitDown = firstDownIdx != -1;
+        
+        if (hitUp && hitDown) {
+            // 둘 다 터치한 경우: 먼저 터치한 쪽을 라벨로
+            // (같은 봉에서 둘 다 터치하면 "먼저"를 알 수 없으니 규칙으로 처리)
+            if (firstUpIdx <= firstDownIdx) return Y.UP_FIRST.name();
+            else return Y.DOWN_FIRST.name();
         }
 
-        if (hitUp && hitDown) return "BOTH";
-        if (hitUp) return "UP_ONLY";
-        if (hitDown) return "DOWN_ONLY";
-        return "NONE";
+        if (hitUp) return Y.UP_ONLY.name();
+        if (hitDown) return Y.DOWN_ONLY.name();
+        return Y.NONE.name();
     }
     
     

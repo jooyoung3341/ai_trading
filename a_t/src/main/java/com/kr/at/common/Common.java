@@ -18,7 +18,7 @@ public class Common {
 	            .toLocalDateTime();                  // LocalDateTime으로 변환하여 반환
 	}
 	
-    public static List<Map<String, Object>> setStartEndDate(int days, int chunkDays) {
+    public List<Map<String, Object>> setStartEndDate(int days, int chunkDays) {
         ZonedDateTime now = ZonedDateTime.now(ZoneId.of( "Asia/Seoul"));
 
         ZonedDateTime start = now.minusDays(days); // 90일 전
@@ -30,8 +30,6 @@ public class Common {
         	Map<String, Object> map = new HashMap<>();
         	ZonedDateTime actualEnd = end.isAfter(now) ? now : end;
 
-           // long startMs = start.toInstant().toEpochMilli();
-            //long endMs = actualEnd.toInstant().toEpochMilli() - 1; // ✅ 경계 중복 방지(선택)
             map.put("startDate", start.toInstant().toEpochMilli());
             map.put("endDate", actualEnd.toInstant().toEpochMilli());
             
@@ -47,7 +45,7 @@ public class Common {
     }
 
     /** (indicator / close) - 1 : 비율 값(0.01 = 1%) */
-    public static double pctFrom(double close, double indicator) {
+    public double pctFrom(double close, double indicator) {
         // NaN/Infinity 방지
         if (!Double.isFinite(close) || !Double.isFinite(indicator)) return 0.0;
 
@@ -58,9 +56,17 @@ public class Common {
     }
     
     /** 퍼센트(%) 단위로 보고 싶으면 (1.0 = 1%) */
-    public static double pctPercent(double close, double indicator) {
+    public double pctPercent(double close, double indicator) {
     	System.out.println("[pctPercent] close : " + close + " / indi data : " + indicator );
         return pctFrom(close, indicator) * 100.0;
+    }
+    
+    public int horizonBars(int hour, int interval) {
+    	return (hour*60)/interval;
+    }
+    
+    public boolean isBlank(String str) {
+    	return str == null || str.trim().isEmpty();
     }
     
     

@@ -1,12 +1,16 @@
 package com.kr.at.service;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -113,10 +117,11 @@ public class AtService {
 		}
 		//bars = 5분봉 1시간 = 12 / 15분봉 1시간  = 4
 		//hold = 0.003(0.3%)
-		return tribuoService.trainAndSaveTouch4WayModel(frList, bars, hold, 0, Path.of("models",modelName));
+		return tribuoService.trainAndSaveTouch4WayModel(frList, bars, hold, modelName);
 	}
 	
-	public Map<String, Object> modelLoad(List<Candle> datas, String modelName) throws Exception{
+	//예측
+	public Map<String, Object> modelPredict(List<Candle> datas, String modelName) throws Exception{
 		List<Double> closeList = new ArrayList<>();
 		List<Double> highList = new ArrayList<>();
 		List<Double> lowList = new ArrayList<>();
@@ -155,12 +160,28 @@ public class AtService {
 		fr.setEma30(ema30);
 		fr.setEma99(ema99);
 		
-		Path modelPath = Path.of("C:\\Users\\admin\\git\\ai_trading\\a_t\\models\\"+modelName);
-		Model<Label> model = tribuoService.loadModel(modelPath);
+		//Path modelPath = Path.of("C:\\Users\\admin\\git\\ai_trading\\a_t\\models\\"+modelName);
+		Model<Label> model = tribuoService.loadModel(modelName);
 		Prediction<Label> pred = tribuoService.predict(model, fr);
 		
-		tribuoService.printResult(pred);
+		return tribuoService.printResult(pred);
+	}
+	
+	public List<String> modelList(String path) throws IOException{
+		Path dir = Paths.get(path);
 		
-		return new HashMap<>();
+	    if (!Files.exists(dir) || !Files.isDirectory(dir)) {
+	        return List.of(); // 또는 예외 throw
+	    }
+
+	    try (Stream<Path> stream = Files.list(dir)) {
+	        return stream
+	                .filter(Files::isRegularFile)
+	                .map(Path::getFileName)
+	                .map(Path::toString)
+	                .filter(name -> name.endsWith(".model"))
+	                .sorted()
+	                .collect(Collectors.toList());
+	    }
 	}
 }

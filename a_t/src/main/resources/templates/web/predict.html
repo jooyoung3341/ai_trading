@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+		layout:decorate="~{layout/default}">
+<head>
+<th:block layout:fragment="css">
+</th:block>
+<meta charset="UTF-8">
+</head>
+
+<div layout:fragment="content">
+	<div class="bs-docs-section">
+		<div class="row">
+			<div class="col-lg-6">
+				<table class="table table-hover">
+					<thead>
+						<tr>
+							<th>심볼</th>
+							<th>등락</th>
+							<th>시간</th>
+							<th>학습 날짜</th>
+							<th></th>
+						</tr>
+					</thead>
+					<tbody id="modelList">
+					</tbody>
+				</table>
+			</div>
+				
+				
+			<div class="col-lg-4">
+				<ul class="list-group" id="5m">
+				</ul>
+				<br/>
+				<ul class="list-group" id="15m">
+				</ul>
+				
+				
+				
+				
+			</div>
+		</div>
+	</div>
+		
+</div>
+
+
+<th:block layout:fragment="script">
+<script>
+window.onload = function(){
+	getModelList();
+}
+
+$(document).on("click", "button[name='predict']", function() {
+	const btn = $(this);
+	
+	const btnId = btn.attr("id");
+	
+	const val = btnId.split("_");
+	var symbol = val[0];
+	var hold = val[2];
+	var hour = val[3];
+	var day = val[4];
+	
+	var val5m = symbol+"_"+"5m_"+hold+"_"+hour+"_"+day;
+	var val15m = symbol+"_"+"15m_"+hold+"_"+hour+"_"+day;
+	
+	$.ajax({
+		url : "/at/predict",
+		data : { "modelName" : val5m},
+		dataType : "json",
+		success : function(data5m){
+			$.ajax({
+				url : "/at/predict",
+				data : { "modelName" : val15m},
+				dataType : "json",
+				success : function(data15m){
+					
+					console.log("data5m : " + JSON.stringify(data5m));
+					console.log("data15m : " + JSON.stringify(data15m));
+					var upFirst_5m = Math.trunc(data5m.UP_FIRST);
+					var upOnly_5m = Math.trunc(data5m.UP_ONLY);
+					var downFirst_5m = Math.trunc(data5m.DOWN_FIRST);
+					var downOnly_5m = Math.trunc(data5m.DOWN_ONLY);
+					var none_5m = Math.trunc(data5m.NONE);
+					
+					var upFirst_15m = Math.trunc(data15m.UP_FIRST);
+					var upOnly_15m = Math.trunc(data15m.UP_ONLY);
+					var downFirst_15m = Math.trunc(data15m.DOWN_FIRST);
+					var downOnly_15m = Math.trunc(data15m.DOWN_ONLY);
+					var none_15m = Math.trunc(data15m.NONE);
+					
+					var disp_5m = "";
+					var disp_15m = "";
+					
+					disp_5m += "<li class='list-group-item list-group-item-secondary d-flex justify-content-between align-items-center'>5M</li>";
+					disp_5m  += "<li class='list-group-item list-group-item-primary d-flex justify-content-between align-items-center'>UP_ONLY<span class='badge bg-primary rounded-pill'>"
+						+upOnly_5m +"%</span><li>";
+					disp_5m  += "<li class='list-group-item list-group-item-primary d-flex justify-content-between align-items-center'>DOWN_ONLY<span class='badge bg-primary rounded-pill'>"
+						+downOnly_5m +"%</span><li>";
+					disp_5m  += "<li class='list-group-item list-group-item-primary d-flex justify-content-between align-items-center'>UP_FIRST<span class='badge bg-primary rounded-pill'>"
+						+upFirst_5m +"%</span><li>";
+  					disp_5m  += "<li class='list-group-item list-group-item-primary d-flex justify-content-between align-items-center'>DOWN_FIRST<span class='badge bg-primary rounded-pill'>"
+						+downFirst_5m +"%</span><li>";
+					disp_5m += "<li class='list-group-item list-group-item-primary d-flex justify-content-between align-items-center'>NONE<span class='badge bg-primary rounded-pill'>"
+						+none_5m +"%</span><li>";
+  
+  					disp_15m  += "<li class='list-group-item list-group-item-secondary d-flex justify-content-between align-items-center'>15M</li>";
+					disp_15m += "<li class='list-group-item list-group-item-primary d-flex justify-content-between align-items-center'>UP_ONLY<span class='badge bg-primary rounded-pill'>"
+						+upOnly_15m+"%</span><li>";
+					disp_15m += "<li class='list-group-item list-group-item-primary d-flex justify-content-between align-items-center'>DOWN_ONLY<span class='badge bg-primary rounded-pill'>"
+						+downOnly_15m+"%</span><li>";
+					disp_15m += "<li class='list-group-item list-group-item-primary d-flex justify-content-between align-items-center'>UP_FIRST<span class='badge bg-primary rounded-pill'>"
+						+upFirst_15m+"%</span><li>";
+  					disp_15m += "<li class='list-group-item list-group-item-primary d-flex justify-content-between align-items-center'>DOWN_FIRST<span class='badge bg-primary rounded-pill'>"
+						+downFirst_15m+"%</span><li>";
+					disp_15m += "<li class='list-group-item list-group-item-primary d-flex justify-content-between align-items-center'>NONE<span class='badge bg-primary rounded-pill'>"
+						+none_15m+"%</span><li>";
+					$("#5m").html(disp_5m);
+					$("#15m").html(disp_15m);
+					
+				}
+			})
+		}
+			
+		})
+	})
+
+function getModelList(){
+	$.ajax({
+		url : "/at/modelList",
+		dataType : "json",
+		success : function(data){
+			const modelList = data.modelList;
+			if(!Array.isArray(modelList) || modelList.length === 0){
+				 $("#modelList").html(
+          					"<tr class='table-danger'><td colspan='5' style='text-align:center;'>저장된 모델이 없습니다.</td></tr>"
+        		);
+        		return;
+			}
+			disp = "";
+			$(modelList).each(function(idx, item){
+				const str = item.split("_");
+				var symbol = str[0];
+				var hold = str[2];
+				var hour = str[3];
+				var day = str[4];
+				
+				disp += "<tr>";
+				disp += "<th scope='row'>"+symbol+"</th>";
+				disp += "<td>"+hold+"</td>";
+				disp += "<td>"+hour+"</td>";
+				disp += "<td>"+day+"</td>";
+				disp += "<td><button type='button' class='btn btn-primary' id="+item+" name='predict'>예측</button></td>";
+				disp += "</tr>";
+			})
+			$("#modelList").html(disp);
+		}
+	})
+}
+</script>
+</th:block>
+
+</html>
