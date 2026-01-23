@@ -116,6 +116,11 @@ public class AtController {
 		return Map.of("tickers", tickerList);
 	}
 	
+	@GetMapping("at/modelDelete")
+	public Map<String, Object> atModelDel(@RequestParam String modelName) throws IOException{
+		return Map.of("result", atService.modelDel(modelName, model_path));
+	}
+	
 	//@PostConstruct
 	public void test() throws Exception{
 		System.out.println("학습 시작");

@@ -19,6 +19,7 @@
 							<th>시간</th>
 							<th>학습 날짜</th>
 							<th></th>
+							<th></th>
 						</tr>
 					</thead>
 					<tbody id="modelList">
@@ -28,6 +29,9 @@
 				
 				
 			<div class="col-lg-4">
+				<div class="alert alert-dismissible alert-danger">
+						<strong id="strong"></strong>
+				</div>
 				<ul class="list-group" id="5m">
 				</ul>
 				<br/>
@@ -94,29 +98,30 @@ $(document).on("click", "button[name='predict']", function() {
 					
 					disp_5m += "<li class='list-group-item list-group-item-secondary d-flex justify-content-between align-items-center'>5M</li>";
 					disp_5m  += "<li class='list-group-item list-group-item-primary d-flex justify-content-between align-items-center'>UP_ONLY<span class='badge bg-primary rounded-pill'>"
-						+upOnly_5m +"%</span><li>";
+						+upOnly_5m +"%</span></li>";
 					disp_5m  += "<li class='list-group-item list-group-item-primary d-flex justify-content-between align-items-center'>DOWN_ONLY<span class='badge bg-primary rounded-pill'>"
-						+downOnly_5m +"%</span><li>";
+						+downOnly_5m +"%</span></li>";
 					disp_5m  += "<li class='list-group-item list-group-item-primary d-flex justify-content-between align-items-center'>UP_FIRST<span class='badge bg-primary rounded-pill'>"
-						+upFirst_5m +"%</span><li>";
+						+upFirst_5m +"%</span></li>";
   					disp_5m  += "<li class='list-group-item list-group-item-primary d-flex justify-content-between align-items-center'>DOWN_FIRST<span class='badge bg-primary rounded-pill'>"
-						+downFirst_5m +"%</span><li>";
+						+downFirst_5m +"%</span></li>";
 					disp_5m += "<li class='list-group-item list-group-item-primary d-flex justify-content-between align-items-center'>NONE<span class='badge bg-primary rounded-pill'>"
-						+none_5m +"%</span><li>";
+						+none_5m +"%</span></li>";
   
   					disp_15m  += "<li class='list-group-item list-group-item-secondary d-flex justify-content-between align-items-center'>15M</li>";
 					disp_15m += "<li class='list-group-item list-group-item-primary d-flex justify-content-between align-items-center'>UP_ONLY<span class='badge bg-primary rounded-pill'>"
-						+upOnly_15m+"%</span><li>";
+						+upOnly_15m+"%</span></li>";
 					disp_15m += "<li class='list-group-item list-group-item-primary d-flex justify-content-between align-items-center'>DOWN_ONLY<span class='badge bg-primary rounded-pill'>"
-						+downOnly_15m+"%</span><li>";
+						+downOnly_15m+"%</span></li>";
 					disp_15m += "<li class='list-group-item list-group-item-primary d-flex justify-content-between align-items-center'>UP_FIRST<span class='badge bg-primary rounded-pill'>"
-						+upFirst_15m+"%</span><li>";
+						+upFirst_15m+"%</span></li>";
   					disp_15m += "<li class='list-group-item list-group-item-primary d-flex justify-content-between align-items-center'>DOWN_FIRST<span class='badge bg-primary rounded-pill'>"
-						+downFirst_15m+"%</span><li>";
+						+downFirst_15m+"%</span></li>";
 					disp_15m += "<li class='list-group-item list-group-item-primary d-flex justify-content-between align-items-center'>NONE<span class='badge bg-primary rounded-pill'>"
-						+none_15m+"%</span><li>";
+						+none_15m+"%</span></li>";
 					$("#5m").html(disp_5m);
 					$("#15m").html(disp_15m);
+					$("#strong").html(btnId);
 					
 				}
 			})
@@ -125,6 +130,26 @@ $(document).on("click", "button[name='predict']", function() {
 		})
 	})
 
+$(document).on("click", "button[name='modelDelete']", function() {
+	const btn = $(this);
+	
+	const btnId = btn.attr("id");
+	const val = btnId.split("-");
+
+	$.ajax({
+		url : "/at/modelDelete",
+		data : {"modelName" : val[1]},
+		dataType : "json",
+		success : function(data){
+			if(data.result){
+				alert("성공");
+			}else{
+				alert("실패")
+			}
+			getModelList();
+		}
+	})
+})
 function getModelList(){
 	$.ajax({
 		url : "/at/modelList",
@@ -133,7 +158,7 @@ function getModelList(){
 			const modelList = data.modelList;
 			if(!Array.isArray(modelList) || modelList.length === 0){
 				 $("#modelList").html(
-          					"<tr class='table-danger'><td colspan='5' style='text-align:center;'>저장된 모델이 없습니다.</td></tr>"
+          					"<tr class='table-danger'><td colspan='6' style='text-align:center;'>저장된 모델이 없습니다.</td></tr>"
         		);
         		return;
 			}
@@ -150,6 +175,7 @@ function getModelList(){
 				disp += "<td>"+hold+"</td>";
 				disp += "<td>"+hour+"</td>";
 				disp += "<td>"+day+"</td>";
+				disp += "<td><button type='button' class='btn btn-danger' id=del-"+item+" name='modelDelete'>삭제</button></td>";
 				disp += "<td><button type='button' class='btn btn-primary' id="+item+" name='predict'>예측</button></td>";
 				disp += "</tr>";
 			})

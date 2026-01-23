@@ -184,4 +184,11 @@ public class AtService {
 	                .collect(Collectors.toList());
 	    }
 	}
+	
+	public boolean modelDel(String modelName, String path) throws IOException {
+        String fileName = modelName.endsWith(".model") ? modelName : modelName + ".model";
+		Path base = Paths.get(path).toAbsolutePath().normalize();
+		Path target = base.resolve(fileName).normalize();
+		return Files.deleteIfExists(target);
+	}
 }
