@@ -80,6 +80,13 @@
 			<artifactId>tribuo-classification-sgd</artifactId>
 			<version>${tribuo.version}</version>
 		</dependency>
+		
+		<!-- XGBoost -->
+		<dependency>
+			<groupId>org.tribuo</groupId>
+			<artifactId>tribuo-classification-xgboost</artifactId>
+			<version>${tribuo.version}</version>
+		</dependency>
 	
 	</dependencies>
 

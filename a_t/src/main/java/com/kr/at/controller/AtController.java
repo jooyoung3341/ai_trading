@@ -22,6 +22,7 @@ import jakarta.annotation.PostConstruct;
 
 import com.kr.at.common.Common;
 import com.kr.at.common.Indicator;
+import com.kr.at.model.BacktestResult;
 import com.kr.at.model.Candle;
 import com.kr.at.model.EnumType;
 import com.kr.at.model.Ticker;
@@ -115,7 +116,7 @@ public class AtController {
 		}
 		return Map.of("tickers", tickerList);
 	}
-	
+	   
 	@GetMapping("at/modelDelete")
 	public Map<String, Object> atModelDel(@RequestParam String modelName) throws IOException{
 		return Map.of("result", atService.modelDel(modelName, model_path));
@@ -159,5 +160,139 @@ public class AtController {
 		double per = common.pctPercent(closes.get(closes.size()-1), ema7);
 		
 		System.out.println("지표 종료 : " + per);
+	}
+
+	// ==================== 백테스트 API ====================
+
+	/**
+	 * 서버 시작 시 자동 백테스트 (주석 해제하면 실행됨)
+	 */
+	@PostConstruct
+	public void backtestOnStartup() {
+		try {
+			System.out.println("========== [AUTO BACKTEST START] ==========");
+			BacktestResult result = atService.runBacktest(
+					"BTCUSDT_5m_0.005_4_2026-01-26",  // modelName
+					"BTCUSDT",                       // symbol
+					"5m",                            // interval
+					30,                              // days
+					1.0,                             // targetProfitPct
+					1.0,                             // stopLossPct
+					0.6,                             // minConfidence
+					0.0004,                          // feeRate
+					48                               // maxHoldingBars
+			);
+			System.out.println("========== [AUTO BACKTEST END] ==========");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	/**
+	 * 백테스트 실행 API
+	 * 
+	 * 예시 호출:
+	 * GET /at/backtest/run?modelName=BTCUSDT_5m_0.01_1_2026-01-22
+	 *                     &symbol=BTCUSDT
+	 *                     &interval=5m
+	 *                     &days=30
+	 *                     &targetProfitPct=1.0
+	 *                     &stopLossPct=1.0
+	 *                     &minConfidence=0.6
+	 *                     &maxHoldingBars=48
+	 */
+	@GetMapping("at/backtest/run")
+	public Map<String, Object> backtestRun(
+			@RequestParam String modelName,
+			@RequestParam(defaultValue = "BTCUSDT") String symbol,
+			@RequestParam(defaultValue = "5m") String interval,
+			@RequestParam(defaultValue = "30") int days,
+			@RequestParam(defaultValue = "1.0") double targetProfitPct,
+			@RequestParam(defaultValue = "1.0") double stopLossPct,
+			@RequestParam(defaultValue = "0.6") double minConfidence,
+			@RequestParam(defaultValue = "0.0004") double feeRate,
+			@RequestParam(defaultValue = "48") int maxHoldingBars
+	) {
+		Map<String, Object> response = new HashMap<>();
+
+		try {
+			BacktestResult result = atService.runBacktest(
+					modelName, symbol, interval, days,
+					targetProfitPct, stopLossPct, minConfidence, feeRate, maxHoldingBars
+			);
+
+			response.put("status", "SUCCESS");
+			response.put("summary", buildBacktestSummary(result));
+			response.put("trades", result.getTrades());
+			response.put("config", buildBacktestConfig(result));
+
+		} catch (Exception e) {
+			response.put("status", "ERROR");
+			response.put("message", e.getMessage());
+			e.printStackTrace();
+		}
+
+		return response;
+	}
+
+	/**
+	 * 간단 요약 백테스트 (거래 목록 제외)
+	 */
+	@GetMapping("at/backtest/summary")
+	public Map<String, Object> backtestSummary(
+			@RequestParam String modelName,
+			@RequestParam(defaultValue = "BTCUSDT") String symbol,
+			@RequestParam(defaultValue = "5m") String interval,
+			@RequestParam(defaultValue = "30") int days,
+			@RequestParam(defaultValue = "1.0") double targetProfitPct,
+			@RequestParam(defaultValue = "1.0") double stopLossPct,
+			@RequestParam(defaultValue = "0.6") double minConfidence,
+			@RequestParam(defaultValue = "0.0004") double feeRate,
+			@RequestParam(defaultValue = "48") int maxHoldingBars
+	) {
+		Map<String, Object> response = new HashMap<>();
+
+		try {
+			BacktestResult result = atService.runBacktest(
+					modelName, symbol, interval, days,
+					targetProfitPct, stopLossPct, minConfidence, feeRate, maxHoldingBars
+			);
+
+			response.put("status", "SUCCESS");
+			response.put("summary", buildBacktestSummary(result));
+			response.put("config", buildBacktestConfig(result));
+
+		} catch (Exception e) {
+			response.put("status", "ERROR");
+			response.put("message", e.getMessage());
+			e.printStackTrace();
+		}
+
+		return response;
+	}
+
+	private Map<String, Object> buildBacktestSummary(BacktestResult result) {
+		Map<String, Object> summary = new HashMap<>();
+		summary.put("totalTrades", result.getTotalTrades());
+		summary.put("wins", result.getWins());
+		summary.put("losses", result.getLosses());
+		summary.put("timeouts", result.getTimeouts());
+		summary.put("winRate", String.format("%.2f%%", result.getWinRate()));
+		summary.put("totalReturnPct", String.format("%.2f%%", result.getTotalReturnPct()));
+		summary.put("avgProfitPct", String.format("%.2f%%", result.getAvgProfitPct()));
+		summary.put("maxDrawdownPct", String.format("%.2f%%", result.getMaxDrawdownPct()));
+		summary.put("profitFactor", String.format("%.2f", result.getProfitFactor()));
+		return summary;
+	}
+
+	private Map<String, Object> buildBacktestConfig(BacktestResult result) {
+		Map<String, Object> config = new HashMap<>();
+		config.put("modelName", result.getModelName());
+		config.put("targetProfitPct", result.getTargetProfitPct() + "%");
+		config.put("stopLossPct", result.getStopLossPct() + "%");
+		config.put("minConfidence", (result.getMinConfidence() * 100) + "%");
+		config.put("feeRate", (result.getFeeRate() * 100) + "%");
+		config.put("maxHoldingBars", result.getMaxHoldingBars());
+		return config;
 	}
 }

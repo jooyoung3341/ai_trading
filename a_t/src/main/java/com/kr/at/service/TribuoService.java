@@ -12,7 +12,7 @@ import org.tribuo.Model;
 import org.tribuo.MutableDataset;
 import org.tribuo.classification.Label;
 import org.tribuo.classification.LabelFactory;
-import org.tribuo.classification.sgd.linear.LogisticRegressionTrainer;
+import org.tribuo.classification.xgboost.XGBoostClassificationTrainer;
 
 import com.kr.at.common.Common;
 import com.kr.at.common.Indicator;
@@ -206,9 +206,24 @@ public class TribuoService {
          //   java.util.List.of(new MeanStdDevTransformation()) // 평균0/표준편차1 :contentReference[oaicite:4]{index=4}
         //);
 
-        // 3) 학습 (MVP: Logistic Regression)
-        //학습 객체
-        LogisticRegressionTrainer trainer = new LogisticRegressionTrainer();
+        // 3) 학습 (XGBoost)
+        // numTrees: 트리 개수 (100~300 권장)
+        // maxDepth: 트리 깊이 (3~6 권장, 과적합 방지)
+        // eta: learning rate (0.1~0.3 권장)
+        XGBoostClassificationTrainer trainer = new XGBoostClassificationTrainer(
+            100,    // numTrees: 트리 개수
+            0.3,    // eta: learning rate
+            0.0,    // gamma: 최소 손실 감소량
+            6,      // maxDepth: 트리 최대 깊이
+            1.0,    // minChildWeight
+            1.0,    // subsample
+            1.0,    // featureSubsample
+            1.0,    // lambda (L2 정규화)
+            0.0,    // alpha (L1 정규화)
+            1,      // nThread
+            true,   // silent: 로그 출력 여부
+            42L     // seed: 랜덤 시드
+        );
         //학습 수행
         Model<Label> model = trainer.train(dataset);
         

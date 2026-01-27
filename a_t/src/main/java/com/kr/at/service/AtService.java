@@ -12,6 +12,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.tribuo.Model;
@@ -19,16 +21,22 @@ import org.tribuo.Prediction;
 import org.tribuo.classification.Label;
 
 import com.kr.at.common.Indicator;
+import com.kr.at.model.BacktestResult;
 import com.kr.at.model.Candle;
 import com.kr.at.model.FeatureRow;
+import com.kr.at.model.Trade;
 
 @Service
 public class AtService {
+
+	private static final Logger log = LoggerFactory.getLogger(AtService.class);
 
 	@Autowired
 	private TribuoService tribuoService;
 	@Autowired
 	private Indicator indicator;
+	@Autowired
+	private BinanceService binanceService;
 	
 	public Path learning(List<Candle> datas, int startIdx, int bars, double hold, String modelName) throws IOException {
 		
@@ -190,5 +198,312 @@ public class AtService {
 		Path base = Paths.get(path).toAbsolutePath().normalize();
 		Path target = base.resolve(fileName).normalize();
 		return Files.deleteIfExists(target);
+	}
+
+	// ==================== 백테스트 관련 메서드 ====================
+
+	/**
+	 * 백테스트 실행
+	 * @param modelName 모델 이름
+	 * @param symbol 심볼 (예: BTCUSDT)
+	 * @param interval 봉 간격 (예: 5m, 15m)
+	 * @param days 테스트 기간 (일)
+	 * @param targetProfitPct 목표 수익률 (예: 1.0 = 1%)
+	 * @param stopLossPct 손절 비율 (예: 1.0 = 1%)
+	 * @param minConfidence 최소 신뢰도 (예: 0.6 = 60%)
+	 * @param feeRate 수수료율 (예: 0.0004 = 0.04%)
+	 * @param maxHoldingBars 최대 보유 봉 수
+	 */
+	public BacktestResult runBacktest(
+			String modelName,
+			String symbol,
+			String interval,
+			int days,
+			double targetProfitPct,
+			double stopLossPct,
+			double minConfidence,
+			double feeRate,
+			int maxHoldingBars
+	) throws Exception {
+
+		log.info("========== [BACKTEST START] ==========");
+		log.info("[CONFIG] Model: {}", modelName);
+		log.info("[CONFIG] Symbol: {}, Interval: {}, Days: {}", symbol, interval, days);
+		log.info("[CONFIG] Target: {}%, StopLoss: {}%, MinConfidence: {}%", 
+				targetProfitPct, stopLossPct, minConfidence * 100);
+		log.info("[CONFIG] FeeRate: {}%, MaxHoldingBars: {}", feeRate * 100, maxHoldingBars);
+
+		// 1. 모델 로드
+		log.info("[STEP 1] Loading model...");
+		Model<Label> model = tribuoService.loadModel(modelName);
+		log.info("[STEP 1] Model loaded successfully");
+
+		// 2. 데이터 수집 (테스트용 데이터)
+		log.info("[STEP 2] Collecting candle data...");
+		List<Candle> candles = collectCandles(symbol, interval, days);
+		log.info("[STEP 2] Collected {} candles", candles.size());
+		if (!candles.isEmpty()) {
+			log.info("[STEP 2] Price range: {} ~ {}", 
+					candles.stream().mapToDouble(Candle::getLow).min().orElse(0),
+					candles.stream().mapToDouble(Candle::getHigh).max().orElse(0));
+		}
+
+		// 3. FeatureRow 리스트 생성 (지표 계산 포함)
+		log.info("[STEP 3] Building feature rows with indicators...");
+		List<FeatureRow> featureRows = buildFeatureRowsForBacktest(candles);
+		log.info("[STEP 3] Built {} feature rows", featureRows.size());
+
+		// 4. 백테스트 실행
+		log.info("[STEP 4] Executing backtest...");
+		BacktestResult result = executeBacktest(
+				model, featureRows, candles,
+				targetProfitPct, stopLossPct, minConfidence, feeRate, maxHoldingBars
+		);
+
+		// 5. 설정값 저장
+		result.setModelName(modelName);
+		result.setTargetProfitPct(targetProfitPct);
+		result.setStopLossPct(stopLossPct);
+		result.setMinConfidence(minConfidence);
+		result.setFeeRate(feeRate);
+		result.setMaxHoldingBars(maxHoldingBars);
+
+		// 6. 통계 계산
+		result.calculate();
+
+		// 결과 로그
+		log.info("========== [BACKTEST RESULT] ==========");
+		log.info("[RESULT] Total Trades: {}", result.getTotalTrades());
+		log.info("[RESULT] Wins: {}, Losses: {}, Timeouts: {}", 
+				result.getWins(), result.getLosses(), result.getTimeouts());
+		log.info("[RESULT] Win Rate: {}%", String.format("%.2f", result.getWinRate()));
+		log.info("[RESULT] Total Return: {}%", String.format("%.2f", result.getTotalReturnPct()));
+		log.info("[RESULT] Avg Profit per Trade: {}%", String.format("%.2f", result.getAvgProfitPct()));
+		log.info("[RESULT] Max Drawdown: {}%", String.format("%.2f", result.getMaxDrawdownPct()));
+		log.info("[RESULT] Profit Factor: {}", String.format("%.2f", result.getProfitFactor()));
+		log.info("========== [BACKTEST END] ==========");
+
+		return result;
+	}
+
+	/**
+	 * 캔들 데이터 수집 (백테스트용)
+	 */
+	private List<Candle> collectCandles(String symbol, String interval, int days) {
+		List<Candle> allCandles = new ArrayList<>();
+		
+		// 3일 단위로 데이터 수집 (API 제한 고려)
+		long now = System.currentTimeMillis();
+		long dayMs = 24 * 60 * 60 * 1000L;
+		long startTime = now - (days * dayMs);
+		long chunkMs = 3 * dayMs;
+
+		long currentStart = startTime;
+		while (currentStart < now) {
+			long currentEnd = Math.min(currentStart + chunkMs, now);
+			List<Candle> chunk = binanceService.getCandlesTime(symbol, interval, currentStart, currentEnd);
+			allCandles.addAll(chunk);
+			currentStart = currentEnd;
+		}
+
+		return allCandles;
+	}
+
+	/**
+	 * FeatureRow 리스트 생성 (백테스트용 지표 계산)
+	 */
+	private List<FeatureRow> buildFeatureRowsForBacktest(List<Candle> candles) {
+		List<Double> closeList = new ArrayList<>();
+		List<Double> highList = new ArrayList<>();
+		List<Double> lowList = new ArrayList<>();
+
+		for (Candle c : candles) {
+			closeList.add(c.getClose());
+			highList.add(c.getHigh());
+			lowList.add(c.getLow());
+		}
+
+		List<FeatureRow> featureRows = new ArrayList<>();
+
+		// 최소 100개 이상의 데이터가 필요 (EMA99 + SSL60 안정화)
+		int startIdx = 100;
+
+		for (int i = startIdx; i < candles.size(); i++) {
+			Candle c = candles.get(i);
+
+			// 현재 시점까지의 데이터로 지표 계산
+			List<Double> closeSub = closeList.subList(0, i + 1);
+			List<Double> highSub = highList.subList(0, i + 1);
+			List<Double> lowSub = lowList.subList(0, i + 1);
+
+			double ema7 = indicator.ema(closeSub, 7);
+			double ema30 = indicator.ema(closeSub, 30);
+			double ema99 = indicator.ema(closeSub, 99);
+			double ssl = indicator.sslLowerk(closeSub, highSub, lowSub, 60);
+
+			FeatureRow fr = new FeatureRow(
+					c.getClose(), c.getVolume(), c.getLow(), c.getHigh(), c.getOpen(),
+					ema7, ema30, ema99, ssl
+			);
+			featureRows.add(fr);
+		}
+
+		return featureRows;
+	}
+
+	/**
+	 * 백테스트 실행 로직
+	 */
+	private BacktestResult executeBacktest(
+			Model<Label> model,
+			List<FeatureRow> featureRows,
+			List<Candle> candles,
+			double targetProfitPct,
+			double stopLossPct,
+			double minConfidence,
+			double feeRate,
+			int maxHoldingBars
+	) {
+		BacktestResult result = new BacktestResult();
+		List<Trade> trades = new ArrayList<>();
+
+		// 캔들 인덱스 오프셋 (featureRows는 100번째부터 시작)
+		int offset = 100;
+
+		int i = 0;
+		while (i < featureRows.size() - maxHoldingBars) {
+			FeatureRow fr = featureRows.get(i);
+
+			// 예측
+			Prediction<Label> pred = tribuoService.predict(model, fr);
+			Map<String, Label> scores = pred.getOutputScores();
+
+			// UP_ONLY, DOWN_ONLY 확률 확인
+			double upOnlyProb = scores.containsKey("UP_ONLY") ? scores.get("UP_ONLY").getScore() : 0;
+			double downOnlyProb = scores.containsKey("DOWN_ONLY") ? scores.get("DOWN_ONLY").getScore() : 0;
+
+			String direction = null;
+			double confidence = 0;
+			String predictedLabel = null;
+
+			// UP_ONLY가 minConfidence 이상이면 LONG
+			if (upOnlyProb >= minConfidence) {
+				direction = "LONG";
+				confidence = upOnlyProb;
+				predictedLabel = "UP_ONLY";
+			}
+			// DOWN_ONLY가 minConfidence 이상이면 SHORT
+			else if (downOnlyProb >= minConfidence) {
+				direction = "SHORT";
+				confidence = downOnlyProb;
+				predictedLabel = "DOWN_ONLY";
+			}
+
+			// 진입 조건 충족 시
+			if (direction != null) {
+				int candleIdx = i + offset;
+				double entryPrice = candles.get(candleIdx).getClose();
+
+				Trade trade = new Trade(candleIdx, direction, entryPrice, confidence, predictedLabel);
+				
+				log.info("[TRADE #{}] {} Entry at {} (confidence: {}%)", 
+						trades.size() + 1, direction, String.format("%.2f", entryPrice), 
+						String.format("%.1f", confidence * 100));
+
+				// 목표가/손절가 계산
+				double targetPrice, stopPrice;
+				if ("LONG".equals(direction)) {
+					targetPrice = entryPrice * (1 + targetProfitPct / 100);
+					stopPrice = entryPrice * (1 - stopLossPct / 100);
+				} else {
+					targetPrice = entryPrice * (1 - targetProfitPct / 100);
+					stopPrice = entryPrice * (1 + stopLossPct / 100);
+				}
+
+				// 미래 봉들 확인
+				boolean closed = false;
+				for (int j = 1; j <= maxHoldingBars && (candleIdx + j) < candles.size(); j++) {
+					Candle futureCandle = candles.get(candleIdx + j);
+					double high = futureCandle.getHigh();
+					double low = futureCandle.getLow();
+
+					if ("LONG".equals(direction)) {
+						// LONG: 고가가 목표가 도달 → WIN
+						if (high >= targetPrice) {
+							trade.setExitPrice(targetPrice);
+							trade.setResult("WIN");
+							trade.setProfitPct(targetProfitPct - (feeRate * 2 * 100));
+							trade.setHoldingBars(j);
+							closed = true;
+							break;
+						}
+						// LONG: 저가가 손절가 도달 → LOSS
+						if (low <= stopPrice) {
+							trade.setExitPrice(stopPrice);
+							trade.setResult("LOSS");
+							trade.setProfitPct(-stopLossPct - (feeRate * 2 * 100));
+							trade.setHoldingBars(j);
+							closed = true;
+							break;
+						}
+					} else {
+						// SHORT: 저가가 목표가 도달 → WIN
+						if (low <= targetPrice) {
+							trade.setExitPrice(targetPrice);
+							trade.setResult("WIN");
+							trade.setProfitPct(targetProfitPct - (feeRate * 2 * 100));
+							trade.setHoldingBars(j);
+							closed = true;
+							break;
+						}
+						// SHORT: 고가가 손절가 도달 → LOSS
+						if (high >= stopPrice) {
+							trade.setExitPrice(stopPrice);
+							trade.setResult("LOSS");
+							trade.setProfitPct(-stopLossPct - (feeRate * 2 * 100));
+							trade.setHoldingBars(j);
+							closed = true;
+							break;
+						}
+					}
+				}
+
+				// 타임아웃 (목표가/손절가 미도달)
+				if (!closed) {
+					int lastIdx = Math.min(candleIdx + maxHoldingBars, candles.size() - 1);
+					double exitPrice = candles.get(lastIdx).getClose();
+					trade.setExitPrice(exitPrice);
+					trade.setResult("TIMEOUT");
+					
+					double pnl;
+					if ("LONG".equals(direction)) {
+						pnl = (exitPrice - entryPrice) / entryPrice * 100;
+					} else {
+						pnl = (entryPrice - exitPrice) / entryPrice * 100;
+					}
+					trade.setProfitPct(pnl - (feeRate * 2 * 100));
+					trade.setHoldingBars(maxHoldingBars);
+				}
+
+				trades.add(trade);
+				
+				log.info("[TRADE #{}] {} | Entry: {} | Exit: {} | Result: {} | Profit: {}% | Bars: {}",
+						trades.size(), direction, 
+						String.format("%.2f", entryPrice), 
+						String.format("%.2f", trade.getExitPrice()), 
+						trade.getResult(), 
+						String.format("%.2f", trade.getProfitPct()), 
+						trade.getHoldingBars());
+
+				// 다음 진입은 청산 후부터
+				i += trade.getHoldingBars();
+			}
+
+			i++;
+		}
+
+		log.info("[BACKTEST] Total trades executed: {}", trades.size());
+		result.setTrades(trades);
+		return result;
 	}
 }
